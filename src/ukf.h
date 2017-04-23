@@ -74,6 +74,12 @@ public:
   ///* the current NIS for laser
   double NIS_laser_;
 
+  ///* NIS ki treshold for radar (three degrees of freedom - three independent dimensions)
+  float NIS_r_tresh_;
+
+  ///* NIS ki treshold for laser (two degrees of freedom - two independent dimensions)
+  float NIS_l_tresh_;
+
   /**
    * Constructor
    */

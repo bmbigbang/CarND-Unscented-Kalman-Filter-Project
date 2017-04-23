@@ -23,12 +23,17 @@ UKF::UKF() {
 
   // initial covariance matrix
   P_ = MatrixXd(5, 5);
+  P_ << 1, 0, 0, 0, 0,
+        0, 1, 0, 0, 0,
+        0, 0, 1, 0, 0,
+        0, 0, 0, 1, 0,
+        0, 0, 0, 0, 1;
 
   // Process noise standard deviation longitudinal acceleration in m/s^2
-  std_a_ = 30;
+  std_a_ = 3;
 
   // Process noise standard deviation yaw acceleration in rad/s^2
-  std_yawdd_ = 30;
+  std_yawdd_ = 0.35;
 
   // Laser measurement noise standard deviation position1 in m
   std_laspx_ = 0.15;
@@ -52,6 +57,35 @@ UKF::UKF() {
 
   Hint: one or more values initialized above might be wildly off...
   */
+
+  //set state dimension
+  int n_x = 5;
+
+  //set augmented dimension
+  int n_aug = 7;
+
+  //set measurement dimension, radar can measure r, phi, and r_dot
+  int n_z = 3;
+
+  //define spreading parameter
+  double lambda = 3 - n_aug;
+
+  //set vector for weights
+  VectorXd weights = VectorXd(2*n_aug+1);
+  double weight_0 = lambda/(lambda+n_aug);
+  weights(0) = weight_0;
+  for (int i=1; i<2*n_aug+1; i++) {
+    double weight = 0.5/(n_aug+lambda);
+    weights(i) = weight;
+  }
+
+  ///* the current NIS for radar
+  double NIS_radar_;
+  NIS_r_tresh_ = 7.815;
+
+  ///* the current NIS for laser
+  double NIS_laser_;
+  NIS_l_tresh_ = 5.991;
 }
 
 UKF::~UKF() {}
