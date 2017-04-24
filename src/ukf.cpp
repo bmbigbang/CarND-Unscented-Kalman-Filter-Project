@@ -21,7 +21,7 @@ UKF::UKF() {
   // initial state vector
   x_ = VectorXd(5);
 
-  // initial covariance matrix
+  // initialize values for the object covariance matrix
   P_ = MatrixXd(5, 5);
   P_ << 1, 0, 0, 0, 0,
         0, 1, 0, 0, 0,
@@ -50,27 +50,43 @@ UKF::UKF() {
   // Radar measurement noise standard deviation radius change in m/s
   std_radrd_ = 0.3;
 
-  /**
-  TODO:
+  // initializing matrices noise matrices and The State-Covariance translation Matrices H
+  R_laser_ = MatrixXd(2, 2);
+  R_radar_ = MatrixXd(3, 3);
+  H_laser_ = MatrixXd(2, 5);
+  H_radar_ = MatrixXd(3, 5);
 
-  Complete the initialization. See ukf.h for other member properties.
+  // measurement covariance matrix - laser
+  R_laser_ << pow(std_laspx_, 2), 0,
+              0, pow(std_laspy_, 2);
 
-  Hint: one or more values initialized above might be wildly off...
-  */
+  // measurement covariance matrix - radar
+  R_radar_ << pow(std_radr_, 2), 0, 0,
+              0, pow(std_radphi_, 2), 0,
+              0, 0, pow(std_radrd_, 2);
 
-  //set state dimension
+  // set the linear laser measurement matrix
+  H_laser_ << 1, 0, 0, 0, 0,
+              0, 1, 0, 0, 0;
+
+  // set the linear radar measurement matrix
+  H_radar_ << 0, 0, 1, 0, 0,
+              0, 0, 0, 1, 0,
+              0, 0, 0, 0, 1;
+
+  // set state dimension
   int n_x = 5;
 
-  //set augmented dimension
+  // set augmented dimension
   int n_aug = 7;
 
-  //set measurement dimension, radar can measure r, phi, and r_dot
+  // set measurement dimension, radar can measure r, phi, and r_dot
   int n_z = 3;
 
-  //define spreading parameter
+  // define spreading parameter
   double lambda = 3 - n_aug;
 
-  //set vector for weights
+  // set vector for weights
   VectorXd weights = VectorXd(2*n_aug+1);
   double weight_0 = lambda/(lambda+n_aug);
   weights(0) = weight_0;
@@ -79,13 +95,34 @@ UKF::UKF() {
     weights(i) = weight;
   }
 
-  ///* the current NIS for radar
+  ///* the current NIS for radar and 0.5 percent ki threshold
   double NIS_radar_;
   NIS_r_tresh_ = 7.815;
 
-  ///* the current NIS for laser
+  ///* the current NIS for laser and 0.5 percent ki threshold
   double NIS_laser_;
   NIS_l_tresh_ = 5.991;
+
+  // process noise covariance matrix
+  MatrixXd Q_ = MatrixXd(5, 5);
+
+  // initialize state transition matrix
+  MatrixXd F_ = MatrixXd(5, 5);
+  F_ << 1, 0, 0, 0, 0,
+        0, 1, 0, 0, 0,
+        0, 0, 1, 0, 0,
+        0, 0, 0, 1, 0,
+        0, 0, 0, 0, 1;
+
+  // identity matrix for calculations
+  MatrixXd I_ = MatrixXd::Identity(5, 5);
+
+  // initialize place holders for kalman filter calculation
+  MatrixXd S_;
+  S_ = MatrixXd(5, 5);
+
+  MatrixXd K_;
+  K_ = MatrixXd(5, 5);
 }
 
 UKF::~UKF() {}
@@ -95,12 +132,33 @@ UKF::~UKF() {}
  * either radar or laser.
  */
 void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
-  /**
-  TODO:
+  /*****************************************************************************
+   *  Initialization
+   ****************************************************************************/
+  if (!is_initialized_) {
 
-  Complete this function! Make sure you switch between lidar and radar
-  measurements.
-  */
+    // first measurement
+    cout << "UKF: " << endl;
+
+    if (meas_package.sensor_type_ == MeasurementPackage::RADAR) {
+      //set the state with the initial location and velocity and yaw
+
+      double ro = meas_package.raw_measurements_[0];
+      double phi = meas_package.raw_measurements_[1];
+      double ro_dot = meas_package.raw_measurements_[2];
+      x_ << ro * cos(phi), ro * sin(phi), ro_dot, phi, 0;
+    }
+    else if (meas_package.sensor_type_ == MeasurementPackage::LASER) {
+      //set the state with the initial location and zero velocity and yaw
+
+      x_ << meas_package.raw_measurements_[0], meas_package.raw_measurements_[1], 0, 0, 0;
+    }
+
+    previous_timestamp_ = meas_package.timestamp_;
+    // done initializing, no need to predict or update
+    is_initialized_ = true;
+    return;
+  }
 }
 
 /**
