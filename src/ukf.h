@@ -75,7 +75,8 @@ public:
   int n_aug_;
 
   // set measurement dimension, radar can measure r, phi, and r_dot
-  int n_z_;
+  int n_z_r_;
+  int n_z_l_;
 
   //create augmented mean vector
   VectorXd x_aug_;
@@ -90,10 +91,12 @@ public:
   MatrixXd Xsig_aug_;
 
   //create matrix for sigma points in measurement space
-  MatrixXd Zsig_;
+  MatrixXd Zsig_r_;
+  MatrixXd Zsig_l_;
 
   //mean predicted measurement
-  VectorXd z_pred_;
+  VectorXd z_pred_r_;
+  VectorXd z_pred_l_;
 
   ///* Sigma point spreading parameter
   double lambda_;
@@ -111,7 +114,8 @@ public:
   float NIS_l_tresh_;
 
   // initialize place holders for kalman filter calculation
-  MatrixXd S_;
+  MatrixXd S_r_;
+  MatrixXd S_l_;
   MatrixXd K_;
 
   /**
