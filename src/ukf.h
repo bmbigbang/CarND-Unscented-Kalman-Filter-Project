@@ -74,6 +74,27 @@ public:
   ///* Augmented state dimension
   int n_aug_;
 
+  // set measurement dimension, radar can measure r, phi, and r_dot
+  int n_z_;
+
+  //create augmented mean vector
+  VectorXd x_aug_;
+
+  //create augmented state covariance
+  MatrixXd P_aug_;
+
+  //create sigma point matrix
+  MatrixXd Xsig_;
+
+  //create sigma point matrix
+  MatrixXd Xsig_aug_;
+
+  //create matrix for sigma points in measurement space
+  MatrixXd Zsig_;
+
+  //mean predicted measurement
+  VectorXd z_pred_;
+
   ///* Sigma point spreading parameter
   double lambda_;
 
@@ -88,6 +109,10 @@ public:
 
   ///* NIS ki treshold for laser (two degrees of freedom - two independent dimensions)
   float NIS_l_tresh_;
+
+  // initialize place holders for kalman filter calculation
+  MatrixXd S_;
+  MatrixXd K_;
 
   /**
    * Constructor
