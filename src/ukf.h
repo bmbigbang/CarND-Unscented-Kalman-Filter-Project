@@ -29,6 +29,9 @@ public:
   ///* state vector: [pos1 pos2 vel_abs yaw_angle yaw_rate] in SI units and rad
   VectorXd x_;
 
+  // measurement vector
+  VectorXd z_;
+
   ///* state covariance matrix
   MatrixXd P_;
 
@@ -116,6 +119,12 @@ public:
   // initialize place holders for kalman filter calculation
   MatrixXd S_r_;
   MatrixXd S_l_;
+
+  // cross correlation tensors
+  MatrixXd Tc_r_;
+  MatrixXd Tc_l_;
+
+  // kalman gain matrix
   MatrixXd K_;
 
   /**

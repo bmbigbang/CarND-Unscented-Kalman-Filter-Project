@@ -23,17 +23,17 @@ UKF::UKF() {
 
   // initialize values for the object covariance matrix
   P_ = MatrixXd(5, 5);
-  P_ << 1, 0, 0, 0, 0,
-        0, 1, 0, 0, 0,
-        0, 0, 1, 0, 0,
+  P_ << 1000, 0, 0, 0, 0,
+        0, 10, 0, 0, 0,
+        0, 0, 10, 0, 0,
         0, 0, 0, 1, 0,
-        0, 0, 0, 0, 1;
+        0, 0, 0, 0, 1000;
 
   // Process noise standard deviation longitudinal acceleration in m/s^2
-  std_a_ = 3;
+  std_a_ = 2.2;
 
   // Process noise standard deviation yaw acceleration in rad/s^2
-  std_yawdd_ = 0.35;
+  std_yawdd_ = 0.22;
 
   // Laser measurement noise standard deviation position1 in m
   std_laspx_ = 0.15;
@@ -64,15 +64,6 @@ UKF::UKF() {
   R_radar_ << pow(std_radr_, 2), 0, 0,
               0, pow(std_radphi_, 2), 0,
               0, 0, pow(std_radrd_, 2);
-
-  // set the linear laser measurement matrix
-  H_laser_ << 1, 0, 0, 0, 0,
-              0, 1, 0, 0, 0;
-
-  // set the linear radar measurement matrix
-  H_radar_ << 0, 0, 1, 0, 0,
-              0, 0, 0, 1, 0,
-              0, 0, 0, 0, 1;
 
   // set state dimension
   n_x_ = 5;
@@ -121,24 +112,11 @@ UKF::UKF() {
   z_pred_r_ = VectorXd(n_z_r_);
   z_pred_l_ = VectorXd(n_z_l_);
 
-  ///* the current NIS for radar and 0.5 percent ki threshold
-  double NIS_radar_;
+  ///* the current NIS for radar and 5 percent ki threshold
   NIS_r_tresh_ = 7.815;
 
-  ///* the current NIS for laser and 0.5 percent ki threshold
-  double NIS_laser_;
+  ///* the current NIS for laser and 5 percent ki threshold
   NIS_l_tresh_ = 5.991;
-
-  // process noise covariance matrix
-  MatrixXd Q_ = MatrixXd(5, 5);
-
-  // initialize state transition matrix
-  MatrixXd F_ = MatrixXd(5, 5);
-  F_ << 1, 0, 0, 0, 0,
-        0, 1, 0, 0, 0,
-        0, 0, 1, 0, 0,
-        0, 0, 0, 1, 0,
-        0, 0, 0, 0, 1;
 
   // identity matrix for calculations
   MatrixXd I_ = MatrixXd::Identity(5, 5);
@@ -150,7 +128,10 @@ UKF::UKF() {
   S_l_ = MatrixXd(n_z_l_, n_z_l_);
   S_l_.fill(0.0);
 
-  K_ = MatrixXd(5, 5);
+  // cross correlation tensors
+  Tc_r_ = MatrixXd(n_x_, n_z_r_);
+  Tc_l_ = MatrixXd(n_x_, n_z_l_);
+
 }
 
 UKF::~UKF() {}
@@ -318,6 +299,7 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
   // print the output
   cout << "x_ = " << x_ << endl;
   cout << "P_ = " << P_ << endl;
+  cout << "NIS L,R = " << NIS_laser_ << "," << NIS_radar_ << endl;
 }
 
 /**
@@ -403,6 +385,42 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
 
   You'll also need to calculate the lidar NIS.
   */
+
+  // calculate cross correlation matrix
+  Tc_l_.fill(0.0);
+
+  // gather measurement values
+  double p_x = meas_package.raw_measurements_[0];
+  double p_y = meas_package.raw_measurements_[1];
+  z_ = VectorXd(2);
+  z_ << p_x, p_y;
+
+  for (int i = 0; i < 2 * n_aug_ + 1; i++) {  //2n+1 simga points
+
+    //residual
+    VectorXd z_diff = Zsig_l_.col(i) - z_pred_l_;
+
+    // state difference
+    VectorXd x_diff = Xsig_pred_.col(i) - x_;
+    //angle normalization
+    while (x_diff(3)> M_PI) x_diff(3)-=2.*M_PI;
+    while (x_diff(3)<-M_PI) x_diff(3)+=2.*M_PI;
+
+    Tc_l_ = Tc_l_ + weights_(i) * x_diff * z_diff.transpose();
+  }
+
+  //Kalman gain K;
+  K_ = Tc_l_ * S_l_.inverse();
+
+  //residual
+  VectorXd z_diff = z_ - z_pred_l_;
+
+  // calculate NIS
+  NIS_laser_ = z_diff.transpose() * S_l_.inverse() * z_diff;
+
+  //update state mean and covariance matrix
+  x_ = x_ + K_ * z_diff;
+  P_ = P_ - K_*S_l_*K_.transpose();
 }
 
 /**
@@ -418,4 +436,49 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 
   You'll also need to calculate the radar NIS.
   */
+
+  // calculate cross correlation matrix
+  Tc_r_.fill(0.0);
+  cout << meas_package.raw_measurements_ << endl;
+  // gather measurement values
+  double ro = meas_package.raw_measurements_[0];
+  double phi = meas_package.raw_measurements_[1];
+  double ro_dot = meas_package.raw_measurements_[2];
+  z_ = VectorXd(3);
+  z_ << ro, ro_dot, phi;
+
+  for (int i = 0; i < 2 * n_aug_ + 1; i++) {  //2n+1 simga points
+
+    //residual
+    VectorXd z_diff = Zsig_r_.col(i) - z_pred_r_;
+
+    //angle normalization
+    while (z_diff(1)> M_PI) z_diff(1)-=2.*M_PI;
+    while (z_diff(1)<-M_PI) z_diff(1)+=2.*M_PI;
+
+    // state difference
+    VectorXd x_diff = Xsig_pred_.col(i) - x_;
+    //angle normalization
+    while (x_diff(3)> M_PI) x_diff(3)-=2.*M_PI;
+    while (x_diff(3)<-M_PI) x_diff(3)+=2.*M_PI;
+
+    Tc_r_ = Tc_r_ + weights_(i) * x_diff * z_diff.transpose();
+  }
+
+  //Kalman gain K;
+  K_ = Tc_r_ * S_r_.inverse();
+
+  //residual
+  VectorXd z_diff = z_ - z_pred_r_;
+
+  //angle normalization
+  while (z_diff(1)> M_PI) z_diff(1)-=2.*M_PI;
+  while (z_diff(1)<-M_PI) z_diff(1)+=2.*M_PI;
+
+  // calculate NIS
+  NIS_radar_ = z_diff.transpose() * S_r_.inverse() * z_diff;
+
+  //update state mean and covariance matrix
+  x_ = x_ + K_ * z_diff;
+  P_ = P_ - K_*S_r_*K_.transpose();
 }
