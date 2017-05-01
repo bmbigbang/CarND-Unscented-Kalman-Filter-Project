@@ -63,7 +63,8 @@ public:
   MatrixXd R_laser_;
   MatrixXd R_radar_;
   MatrixXd H_laser_;
-  MatrixXd H_radar_;
+  MatrixXd Ht_;
+  MatrixXd I_;
 
   ///* Radar measurement noise standard deviation radius change in m/s
   double std_radrd_ ;
