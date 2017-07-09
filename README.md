@@ -1,5 +1,19 @@
-# Unscented Kalman Filter Project Starter Code
-Self-Driving Car Engineer Nanodegree Program
+# Unscented Kalman Filter Project
+
+The program is capable of combining multidimensional sensor data
+together using first order Taylor expansion term of the equation models
+of motion for each dimension, while scaling the influence of each sensor
+ by its uncertainty. This method is based on a Kalman Filter
+  [E. A. Wan et al.](https://www.seas.harvard.edu/courses/cs281/papers/unscented.pdf)
+  and is more efficient than direct derivative space conversion of the
+  equation models, especially in higher dimensional sensors.
+  
+Once run, the data is read from sample exports of LIDAR and RADAR sensors
+and given the initial sensor error values, a map of locations is generated
+where at each point the uncertainty of either sensor could vary depending
+on environmental causes. For example, the LIDAR might have reduced vision in a construction site due to physical obstacles, and return a high uncertainty value or deviate substantially from the current result. In this case the 
+Filter will automatically take more influence from the RADAR measurement
+and return a value closer to the current belief as a result.
 
 ---
 
@@ -18,29 +32,4 @@ Self-Driving Car Engineer Nanodegree Program
    some sample inputs in 'data/'.
     - eg. `./UnscentedKF ../data/obj_pose-laser-radar-synthetic-input.txt`
 
-## Editor Settings
 
-We've purposefully kept editor configuration files out of this repo in order to
-keep it as simple and environment agnostic as possible. However, we recommend
-using the following settings:
-
-* indent using spaces
-* set tab width to 2 spaces (keeps the matrices in source code aligned)
-
-## Code Style
-
-Please stick to [Google's C++ style guide](https://google.github.io/styleguide/cppguide.html) as much as possible.
-
-## Generating Additional Data
-
-This is optional!
-
-If you'd like to generate your own radar and lidar data, see the
-[utilities repo](https://github.com/udacity/CarND-Mercedes-SF-Utilities) for
-Matlab scripts that can generate additional data.
-
-## Project Instructions and Rubric
-
-This information is only accessible by people who are already enrolled in Term 2
-of CarND. If you are enrolled, see [the project page](https://classroom.udacity.com/nanodegrees/nd013/parts/40f38239-66b6-46ec-ae68-03afd8a601c8/modules/0949fca6-b379-42af-a919-ee50aa304e6a/lessons/c3eb3583-17b2-4d83-abf7-d852ae1b9fff/concepts/f437b8b0-f2d8-43b0-9662-72ac4e4029c1)
-for instructions and the project rubric.
